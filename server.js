@@ -1,24 +1,27 @@
 const express = require("express");
 const bcrypt = require("bcrypt-nodejs");
+const cors = require("cors");
 
 const app = express();
+
 app.use(express.json());
+app.use(cors());
 
 const database = {
   users: [
     {
       id: "123",
-      name: "mai",
+      name: "Mai",
       email: "mai@gmail.com",
-
+      password: "cookies",
       entries: 0,
       joined: new Date(),
     },
     {
       id: "124",
-      name: "ted",
+      name: "Ted",
       email: "ted@gmail.com",
-
+      password: "apples",
       entries: 0,
       joined: new Date(),
     },
@@ -37,12 +40,12 @@ app.get("/", (req, res) => {
 });
 
 app.post("/signin", (req, res) => {
-  bcrypt.compare("bacon", hash, function (err, res) {
-    // res == true
-  });
-  bcrypt.compare("veggies", hash, function (err, res) {
-    // res = false
-  });
+  // bcrypt.compare("bacon", hash, function (err, res) {
+  //   // res == true
+  // });
+  // bcrypt.compare("veggies", hash, function (err, res) {
+  //   // res = false
+  // });
 
   if (
     req.body.email === database.users[0].email &&
