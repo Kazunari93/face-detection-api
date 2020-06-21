@@ -1,6 +1,24 @@
 const express = require("express");
 const bcrypt = require("bcrypt-nodejs");
 const cors = require("cors");
+const knex = require("knex");
+const { response } = require("express");
+
+const db = knex({
+  client: "pg",
+  connection: {
+    host: "127.0.0.1",
+    user: "kw",
+    password: "",
+    database: "face-detection",
+  },
+});
+
+db.select("*")
+  .from("users")
+  .then((data) => {
+    console.log(data);
+  });
 
 const app = express();
 
@@ -62,14 +80,17 @@ app.post("/register", (req, res) => {
   bcrypt.hash(password, null, null, function (err, hash) {
     // Store hash in your password DB.
   });
-  database.users.push({
-    id: "125",
-    name,
-    email,
-    entries: 0,
-    joined: new Date(),
-  });
-  res.json(database.users[database.users.length - 1]);
+  db("users")
+    .returning("*")
+    .insert({
+      email,
+      name,
+      joined: new Date(),
+    })
+    .then((user) => {
+      user.json(user[0]);
+    })
+    .catch((err) => res.status(400).json("unable to join"));
 });
 
 app.get("/profile/:id", (req, res) => {
