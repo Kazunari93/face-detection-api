@@ -25,72 +25,62 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-const database = {
-  users: [
-    {
-      id: "123",
-      name: "Mai",
-      email: "mai@gmail.com",
-      password: "cookies",
-      entries: 0,
-      joined: new Date(),
-    },
-    {
-      id: "124",
-      name: "Ted",
-      email: "ted@gmail.com",
-      password: "apples",
-      entries: 0,
-      joined: new Date(),
-    },
-  ],
-  login: [
-    {
-      id: "987",
-      hash: "",
-      email: "mai@gmail.com",
-    },
-  ],
-};
-
 app.get("/", (req, res) => {
-  res.send(database.users);
+  res.send(db.users);
 });
 
 app.post("/signin", (req, res) => {
-  // bcrypt.compare("bacon", hash, function (err, res) {
-  //   // res == true
-  // });
-  // bcrypt.compare("veggies", hash, function (err, res) {
-  //   // res = false
-  // });
-
-  if (
-    req.body.email === database.users[0].email &&
-    req.body.password === database.users[0].password
-  ) {
-    res.json(database.users[0]);
-  } else {
-    res.status(400).json("error logging in");
-  }
+  db.select("email", "hash")
+    .where("email", "=", req.body.email)
+    .from("login")
+    .then((data) => {
+      const isValid = bcrypt.compareSync(req.body.password, data[0].hash);
+      if (isValid) {
+        return db
+          .select("*")
+          .from("users")
+          .where("email", "=", req.body.email)
+          .then((user) => {
+            res.json(user[0]);
+          })
+          .catch((err) => {
+            res.status(400).json("unable to get user");
+          });
+      } else {
+        res.status(400).json("wrong");
+      }
+    })
+    .catch((err) => {
+      res.status(400).json("wrong");
+    });
 });
 
 app.post("/register", (req, res) => {
   const { email, name, password } = req.body;
-  bcrypt.hash(password, null, null, function (err, hash) {
-    // Store hash in your password DB.
-  });
-  db("users")
-    .returning("*")
-    .insert({
-      email,
-      name,
-      joined: new Date(),
-    })
-    .then((user) => {
-      user.json(user[0]);
-    })
-    .catch((err) => res.status(400).json("unable to join"));
+  const hash = bcrypt.hashSync(password);
+  db.transaction((trx) => {
+    trx
+      .insert({
+        hash,
+        email,
+      })
+      .into("login")
+      .returning("email")
+      .then((loginEmail) => {
+        return trx("users")
+          .returning("*")
+          .insert({
+            email: loginEmail[0],
+            name,
+            joined: new Date(),
+          })
+          .then((user) => {
+            res.json(user[0]);
+          });
+      })
+      .then(trx.commit)
+      .catch(trx.rollback);
+  }).catch((err) => res.status(400).json("unable to join"));
 });
 
 app.get("/profile/:id", (req, res) => {
@@ -106,9 +96,6 @@ app.get("/profile/:id", (req, res) => {
       }
     })
     .catch((err) => res.status(400).json("error getting user"));
-  // if (!found) {
-  //   res.status(400).json("not found");
-  // }
 });
 
 app.put("/image", (req, res) => {
