@@ -51,11 +51,3 @@ app.post("/imageurl", (req, res) => {
 app.listen(process.env.PORT || 3000, () => {
   console.log(`app is running on port ${process.env.PORT}`);
 });
-
-/*
-/ --> res = working
-/signin --> POST = success/fail
-/register --> POST = user
-/profile/:user --> GET = user
-/image --> PUT --> user
-*/
