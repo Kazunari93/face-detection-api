@@ -16,8 +16,6 @@ const db = knex({
   },
 });
 
-db.select("*").from("users");
-
 const app = express();
 
 app.use(express.json());
